@@ -1,9 +1,9 @@
 <template>
   <div class="max-w-3xl  mx-auto">
 
-    <h1>dwefwe</h1>
+    <h1>test fields </h1>
 
-    <filters :filterableFields="fields" @filters_update="applyFilters" />
+    <filters doctype="Communication" @filters_update="applyFilters" />
 
     <div v-if="data" v-html="data.about_us"></div>
     <div v-else>Loading...</div>  </div>

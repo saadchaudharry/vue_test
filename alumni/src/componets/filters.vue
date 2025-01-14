@@ -32,13 +32,10 @@
         />
         
         <!-- FormControl for value input -->
-        <FormControl
-          v-model="filter.query"
-          :type="getFieldInputType(filter.fieldtype)"
-          placeholder="Value"
-          class="filter-input"
-        />
-        
+        <DynamicInput
+            :filter="filter"
+          />
+
         <!-- Remove button for filter -->
         <Button
           icon="x"
@@ -52,23 +49,44 @@
 </template>
 
 <script setup>
-import { ref, watch,defineEmits } from "vue"; // Vue utilities
+import { ref, watch, onMounted, defineEmits } from "vue";
 import { Button, Autocomplete, FormControl } from "frappe-ui";
+import DynamicInput from "./DynamicInput.vue";
+import { createResource } from "frappe-ui";
 
 // Props
 const props = defineProps({
-  filterableFields: {
-    type: Array,
+  doctype: {
+    type: String,
     required: true,
   },
 });
 
-// Reactive filters array
-const drop_down = ref(props.filterableFields);
+// Emits
+const emit = defineEmits(["filters_update"]);
 
-
-// Reactive filters array
+// Reactive state
 const filters = ref([]);
+const drop_down = ref([]); // Initialize with props but fetch dynamically if empty
+const isLoadingFields = ref(false); // Tracks API call status
+
+// Fetch fields based on doctype
+const resource = createResource({
+    url: "/api/method/get_fields",
+    params: { doctype: props.doctype },
+    initialData: []
+
+});
+
+
+// Fetch filterable fields on component mount
+onMounted(() => {
+  resource.fetch().then(() => {
+    drop_down.value = resource.data
+  });
+});
+
+
 
 // Add a new blank filter
 const addFilter = () => {
@@ -78,6 +96,7 @@ const addFilter = () => {
     operator: null,
     query: null,
     fieldtype: null,
+    options: null,
   });
 };
 
@@ -91,52 +110,45 @@ const clearFilters = () => {
   filters.value = [];
 };
 
-// Fetch operators based on field type
+// Get operators based on field type
 const getOperators = (fieldtype) => {
   const operatorMapping = {
-    Data: ["=", "like", "not like", "in", "not in", "is", "is not"],
-    Int: ["=", "!=", ">", "<", ">=", "<=", "in", "not in"],
-    Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in"],
-    Date: ["=", "!=", ">", "<", ">=", "<=", "between", "in", "not in"],
-    Link: ["=", "in", "not in", "is", "is not"],
-    Select: ["=", "in", "not in"],
-    Check: ["=", "is", "is not"],
-    Time: ["=", ">", "<", ">=", "<="],
+    Data: ["=", "like", "not like", "in", "not in", "is"],
+    Int: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    Date: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
+    Link: ["=", "in", "not in", "is not", "is"],
+    Select: ["=", "!=", "in", "is"],
+    Check: ["is"],
+    Time: ["=", ">", "<", ">=", "<=", "is"],
+    Datetime:["=", "!=", ">", "<", ">=", "<=", "between", "is"]
   };
-
   return operatorMapping[fieldtype] || ["="];
 };
 
-
-// Determine the input type for the value field
-const getFieldInputType = (fieldtype) => {
-  const inputTypeMapping = {
-    Data: "text",
-    Int: "number",
-    Date: "date",
-  };
-  return inputTypeMapping[fieldtype] || "text";
-};
-
-// Update filter's fieldtype when fieldname is selected
+// Update filter's field type when field name is selected
 const onFieldChange = (value, index) => {
-
-  const field = props.filterableFields.find((f) => f.fieldname === value.fieldname);
+  const field = drop_down.value.find((f) => f.fieldname === value.fieldname);
   if (field) {
-    filters.value[index].fieldtype = field.fieldtype;  
-    filters.value[index].label = field.label;  
-    filters.value[index].value = field.value;  
-    filters.value[index].fieldname = field.fieldname;
-
+    Object.assign(filters.value[index], {
+      fieldtype: field.fieldtype,
+      label: field.label,
+      value: field.value,
+      fieldname: field.fieldname,
+      options: field.options,
+    });
   }
-
 };
 
-// Emit the updated filters to the parent
-const emit = defineEmits(["filters_update"]);
-watch(filters, (newFilters) => {
-   emit("filters_update", newFilters);
-}, { deep: true, immediate: true }); // Added deep and immediate options
+// Watch for filter changes and emit to parent
+watch(
+  filters,
+  (newFilters) => {
+    emit("filters_update", newFilters);
+  },
+  { deep: true, immediate: true }
+);
+
 
 </script>
 

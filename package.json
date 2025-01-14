@@ -1,0 +1,15 @@
+{
+  "name": "vue_test",
+  "version": "1.0.0",
+  "description": "testy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "cd alumni && yarn install",
+    "dev": "cd alumni && yarn dev",
+    "build": "cd alumni && yarn build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
