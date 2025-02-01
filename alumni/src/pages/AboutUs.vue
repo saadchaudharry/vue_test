@@ -25,7 +25,7 @@ import { Button, Autocomplete, FormControl } from "frappe-ui";
 const { fetchAboutUsData } = Alumni;
 
 const data = ref(null);
-const doctype = ref('Alumni _');
+const doctype = ref('Alumni Event');
 const filter = ref([]);
 
 const get_fetch = ref([])
@@ -50,6 +50,7 @@ const applyFilters = (newFilters) => {
   // console.log('Filters applied:', newFilters);
   todos.filters = newFilters; // Update the filters in todos
   todos.fetch()
+
   get_fetch.value = todos.data
 
   console.log(get_fetch.value)
