@@ -3,7 +3,12 @@
 
     <h1>test fields </h1>
 
-    <filters doctype="Communication" @filters_update="applyFilters" />
+    <filters :doctype="doctype" @filters_update="applyFilters" />
+
+
+    <h1>test fields </h1>
+    <h1>test fields </h1>
+    <h1>test fields </h1>
 
     <div v-if="data" v-html="data.about_us"></div>
     <div v-else>Loading...</div>  </div>
@@ -13,42 +18,43 @@
 import { ref, onMounted } from 'vue'
 import Alumni from '../data/alumni.js';
 import filters from '../componets/filters.vue';
+import { createListResource } from 'frappe-ui'
 
 import { Button, Autocomplete, FormControl } from "frappe-ui";
 
 const { fetchAboutUsData } = Alumni;
 
 const data = ref(null);
+const doctype = ref('Alumni _');
+const filter = ref([]);
+
+const get_fetch = ref([])
+
+const todos = createListResource({
+  doctype: doctype.value,
+  fields: ['name'],
+  filters: [],
+  orderBy: 'creation desc',
+  start: 0,
+  pageLength: 10,
+  initialData: [],
+});
 
 onMounted(async () => {
   data.value = await fetchAboutUsData();
-  console.log(data.value.about_us);
+  console.log(todos.data)
+
 });
 
+const applyFilters = (newFilters) => {
+  // console.log('Filters applied:', newFilters);
+  todos.filters = newFilters; // Update the filters in todos
+  todos.fetch()
+  get_fetch.value = todos.data
 
-const single  = ref(null)
-const filtersss  = ref(null)
+  console.log(get_fetch.value)
 
 
-// Sample filterable fields
-const fields = [
-  { label: "Name", fieldname: "name", fieldtype: "Data" },
-  { label: "Email", fieldname: "email", fieldtype: "Data" },
-  { label: "Age", fieldname: "age", fieldtype: "Int" },
-  { label: "Date of Birth", fieldname: "date_of_birth", fieldtype: "Date" },
-  { label: "Status", fieldname: "status", fieldtype: "Data" },
-  { label: "Created At", fieldname: "created_at", fieldtype: "Datetime" },
-  { label: "Updated At", fieldname: "updated_at", fieldtype: "Datetime" },
-  { label: "Price", fieldname: "price", fieldtype: "Currency" },
-  { label: "Is Active", fieldname: "is_active", fieldtype: "Bool" },
-  { label: "Description", fieldname: "description", fieldtype: "Text" },
-  { label: "Category", fieldname: "category", fieldtype: "Select" },
-  { label: "Related Link", fieldname: "related_link", fieldtype: "Link" },
-].map(item => ({ ...item, value: item.fieldname }));
 
-const applyFilters = (filters) => {
-
-  console.log("Filters applied:", filters);
 };
-
 </script>

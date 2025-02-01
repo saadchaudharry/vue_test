@@ -1,17 +1,15 @@
 <template>
-  <div class="filter-container">
-    <div class="filter-header">
-      <Button label="Add Filter" @click="addFilter" />
-      <Button
-        v-if="filters.length"
-        label="Clear All"
-        class="ml-2"
-        variant="danger"
-        @click="clearFilters"
-      />
-    </div>
 
-    <div class="bg-grey">
+
+  <Popover>
+    <template #target="{ togglePopover }">
+      <Button @click="togglePopover();addFilter()" >
+        Filter
+      </Button>
+    </template>
+    <template #body-main>
+      <div class="p-2 text-ink-gray-9">
+
       <div v-for="(filter, index) in filters" :key="index" class="filter-row">
         <!-- Autocomplete for selecting fieldname -->
         <Autocomplete
@@ -44,13 +42,73 @@
           class="remove-filter"
         />
       </div>
-    </div>
-  </div>
+
+      <div class="flex items-center gap-2 border-t pt-2">
+
+
+        <Button
+          :variant="'ghost'"
+          :ref_for="true"
+          theme="gray"
+          size="sm"
+          label="+ Add a Filter"
+          :loading="false"
+          :loadingText="null"
+          :disabled="false"
+          :link="null"
+          @click="addFilter()"
+        >
+          + Add a Filter
+        </Button>
+
+
+        <div class="flex gap-2 ml-auto">
+          <Button
+            :variant="'subtle'"
+            :ref_for="true"
+            theme="gray"
+            size="sm"
+            label="Clear Filters"
+            :loading="false"
+            :loadingText="null"
+            :disabled="false"
+            :link="null"
+            @click="clearFilters"
+          >
+            Clear Filters
+          </Button>
+          <Button
+            :variant="'solid'"
+            :ref_for="true"
+            theme="gray"
+            size="sm"
+            label="Apply filters"
+            :loading="false"
+            :loadingText="null"
+            :disabled="false"
+            :link="null"
+          >
+          Apply filters
+          </Button>
+
+
+
+        </div>
+      </div>
+
+
+      </div>
+    </template>
+  </Popover>
+
+
+
+
 </template>
 
 <script setup>
 import { ref, watch, onMounted, defineEmits } from "vue";
-import { Button, Autocomplete, FormControl } from "frappe-ui";
+import { Button, Autocomplete, FormControl,Popover } from "frappe-ui";
 import DynamicInput from "./DynamicInput.vue";
 import { createResource } from "frappe-ui";
 
@@ -110,21 +168,56 @@ const clearFilters = () => {
   filters.value = [];
 };
 
-// Get operators based on field type
+
 const getOperators = (fieldtype) => {
   const operatorMapping = {
-    Data: ["=", "like", "not like", "in", "not in", "is"],
-    Int: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
-    Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
-    Date: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
-    Link: ["=", "in", "not in", "is not", "is"],
-    Select: ["=", "!=", "in", "is"],
+    Attach: ["=", "is"],
+    AttachImage: ["=", "is"],
+    Barcode: ["=", "is"],
+    Button: ["=", "is"],
     Check: ["is"],
+    Code: ["=", "is"],
+    Color: ["=", "is"],
+    // ColumnBreak: ["=", "is"],
+    Currency: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    Data: ["=", "like", "not like", "in", "not in", "is"],
+    Date: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
+    Datetime: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
+    Duration: ["=", "!=", ">", "<", ">=", "<=", "is"],
+    DynamicLink: ["=", "is"],
+    Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    // Fold: ["=", "is"],
+    Geolocation: ["=", "is"],
+    Heading: ["=", "is"],
+    HTML: ["=", "is"],
+    HTMLEditor: ["=", "is"],
+    Icon: ["=", "is"],
+    Image: ["=", "is"],
+    Int: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    JSON: ["=", "is"],
+    Link: ["=", "in", "not in", "is not", "is"],
+    LongText: ["=", "like", "not like", "in", "not in", "is"],
+    MarkdownEditor: ["=", "is"],
+    Password: ["=", "is"],
+    Percent: ["=", "!=", ">", "<", ">=", "<=", "is"],
+    Phone: ["=", "is"],
+    ReadOnly: ["=", "is"],
+    Rating: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
+    Select: ["=", "!=", "in", "is"],
+    Signature: ["=", "is"],
+    SmallText: ["=", "like", "not like", "in", "not in", "is"],
+    // TabBreak: ["=", "is"],
+    // Table: ["=", "is"],
+    // TableMultiSelect: ["=", "is"],
+    Text: ["=", "like", "not like", "in", "not in", "is"],
+    TextEditor: ["=", "is"],
     Time: ["=", ">", "<", ">=", "<=", "is"],
-    Datetime:["=", "!=", ">", "<", ">=", "<=", "between", "is"]
   };
-  return operatorMapping[fieldtype] || ["="];
+
+  // Return operators for the given field type or default to ["=", "is"].
+  return operatorMapping[fieldtype] || ["=", "is"];
 };
+
 
 // Update filter's field type when field name is selected
 const onFieldChange = (value, index) => {
@@ -140,11 +233,52 @@ const onFieldChange = (value, index) => {
   }
 };
 
+
+
+// Generate API-ready filters
+const getApiFilters = () => {
+  return filters.value
+    .filter(
+      (filter) =>
+        filter.fieldname && filter.operator && (filter.query !== null && filter.query !== undefined)
+    )
+    .map((filter) => {
+      const field = drop_down.value.find((f) => f.fieldname === filter.fieldname);
+
+      let queryValue = filter.query;
+
+      // For link fields, extract the value if query is an object
+      if (filter.fieldtype === "Link" && typeof queryValue === "object") {
+        queryValue = queryValue?.value || null;
+      }
+
+      // For "in" and "not in" operators, ensure queryValue is an array
+      if (["in", "not in"].includes(filter.operator) && typeof queryValue === "string") {
+        queryValue = queryValue.split(",").map((item) => item.trim());
+      }
+
+      // For "between" operator, convert queryValue to an array if it's a string
+      if (filter.operator === "between" && typeof queryValue === "string") {
+        queryValue = queryValue.split(",").map((item) => item.trim());
+      }
+
+      return [
+        props.doctype,
+        field?.fieldname || filter.fieldname,
+        filter.operator,
+        queryValue,
+      ];
+    });
+};
+
+
+
+
 // Watch for filter changes and emit to parent
-watch(
-  filters,
-  (newFilters) => {
-    emit("filters_update", newFilters);
+watch(filters,() => {
+  
+    emit("filters_update", getApiFilters());
+
   },
   { deep: true, immediate: true }
 );
