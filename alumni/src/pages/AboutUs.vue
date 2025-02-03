@@ -1,61 +1,147 @@
 <template>
-  <div class="max-w-3xl  mx-auto">
+  <div class="max-w-3xl mx-auto">
+    <!-- Show loading state for filters -->
+    <div v-if="fields_loaded"> 
 
-    <h1>test fields </h1>
+      <div class="inline-flex justify-end space-x-3  p-0 m-0" role="group">
 
-    <filters :doctype="doctype" @filters_update="applyFilters" />
+      
+          <Button
+            :variant="'subtle'"
+            :ref_for="true"
+            theme="gray"
+            size="sm"
+            label="Button"
+            :loading="false"
+            :loadingText="null"
+            :disabled="false"
+            :link="null"
+          >
+            refresh
+          </Button>
+
+        <filters 
+          :fields="fields_list" 
+          @filters_update="applyFilters" 
+        />
+
+        <orderBy :fields="fields_list" />
+
+        <Button
+          :variant="'solid'"
+          :ref_for="true"
+          theme="gray"
+          size="sm"
+          label="Button"
+          :loading="false"
+          :loadingText="null"
+          :disabled="false"
+          :link="null"
+        >
+          +Add
+        </Button>
+
+        </div>  
+
+        <br>
+        <br>
+
+          <ListView
+            class="h-[150px]"
+            :columns="[
+              {
+                label: 'Name',
+                key: 'name',
+                width: 3,
+              },
+              {
+                label: 'Email',
+                key: 'email',
+                width: '200px',
+              },
+              {
+                label: 'Role',
+                key: 'role',
+              },
+              {
+                label: 'Status',
+                key: 'status',
+              },
+            ]"
+            :rows="[]"
+
+            row-key="id"
+
+            :options="{
+                selectable: true,
+                showTooltip: true,
+                resizeColumn: true,
+                emptyState: {
+                  title: 'No records found',
+                  description: 'Create a new record to get started',
+                  button: {
+                    label: 'New Record',
+                    variant: 'solid',
+                    onClick: () => console.log('New Record'),
+                  },
+                },
+              }"
 
 
-    <h1>test fields </h1>
-    <h1>test fields </h1>
-    <h1>test fields </h1>
+          />
 
-    <div v-if="data" v-html="data.about_us"></div>
-    <div v-else>Loading...</div>  </div>
+
+
+        <Pagination :modelValue="20" />
+
+    </div>
+    <div v-else>
+      Loading filters...
+    </div>
+
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import Alumni from '../data/alumni.js';
+import { ref, onMounted,watch,onBeforeMount } from 'vue'
+import { createResource, createListResource } from 'frappe-ui'
+import { ListView } from 'frappe-ui'
+
+
 import filters from '../componets/filters.vue';
-import { createListResource } from 'frappe-ui'
+import orderBy from '../componets/orderby.vue';
+import Pagination from '../componets/Pagination.vue';
 
-import { Button, Autocomplete, FormControl } from "frappe-ui";
+// Initialize with empty array
+const fields_list = ref([])
+const fields_loaded = ref(false)
+const doctype = ref('Alumni Event')
 
-const { fetchAboutUsData } = Alumni;
+// Fetch fields with error handling
+const resource = createResource({
+  url: "/api/method/get_fields",
+  params: { doctype: doctype.value },
+  initialData: []
 
-const data = ref(null);
-const doctype = ref('Alumni Event');
-const filter = ref([]);
+})
 
-const get_fetch = ref([])
 
-const todos = createListResource({
-  doctype: doctype.value,
-  fields: ['name'],
-  filters: [],
-  orderBy: 'creation desc',
-  start: 0,
-  pageLength: 10,
-  initialData: [],
+// Fetch filterable fields on component mount
+onBeforeMount(() => {
+  resource.fetch()
+    .then(() => {
+      fields_list.value = resource.data;
+      fields_loaded.value = true;
+    })
+    .catch((error) => {
+      fields_loaded.value = true;
+    });
 });
 
-onMounted(async () => {
-  data.value = await fetchAboutUsData();
-  console.log(todos.data)
-
-});
 
 const applyFilters = (newFilters) => {
-  // console.log('Filters applied:', newFilters);
-  todos.filters = newFilters; // Update the filters in todos
-  todos.fetch()
 
-  get_fetch.value = todos.data
-
-  console.log(get_fetch.value)
-
-
+  console.log(newFilters)
 
 };
 </script>

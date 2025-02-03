@@ -3,7 +3,7 @@
 
   <Popover>
     <template #target="{ togglePopover }">
-      <Button @click="togglePopover();addFilter()" >
+      <Button @click="togglePopover(); initiateFilter()" >
         Filter
       </Button>
     </template>
@@ -107,15 +107,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, defineEmits } from "vue";
+import { ref, watch, onMounted, defineEmits,onBeforeMount } from "vue";
 import { Button, Autocomplete, FormControl,Popover } from "frappe-ui";
 import DynamicInput from "./DynamicInput.vue";
 import { createResource } from "frappe-ui";
 
 // Props
 const props = defineProps({
-  doctype: {
-    type: String,
+  fields: {
+    type: Array,
     required: true,
   },
 });
@@ -125,30 +125,19 @@ const emit = defineEmits(["filters_update"]);
 
 // Reactive state
 const filters = ref([]);
-const drop_down = ref([]); // Initialize with props but fetch dynamically if empty
-const isLoadingFields = ref(false); // Tracks API call status
+const drop_down = ref(props.fields); // Initialize with props but fetch dynamically if empty
 
-// Fetch fields based on doctype
-const resource = createResource({
-    url: "/api/method/get_fields",
-    params: { doctype: props.doctype },
-    initialData: []
-
-});
-
-
-// Fetch filterable fields on component mount
-onMounted(() => {
-  resource.fetch().then(() => {
-    drop_down.value = resource.data
-  });
-});
-
-
+// Add a new blank filter on toggle if not filter exists
+const initiateFilter = () => {
+      if (filters.value.length <= 0) {
+        addFilter();
+      }
+  };
 
 // Add a new blank filter
 const addFilter = () => {
   filters.value.push({
+    doctype: null,
     label: null,
     fieldname: null,
     operator: null,
@@ -184,7 +173,7 @@ const getOperators = (fieldtype) => {
     Date: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
     Datetime: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
     Duration: ["=", "!=", ">", "<", ">=", "<=", "is"],
-    DynamicLink: ["=", "is"],
+    DynamicLink:["=", "like", "not like", "in", "not in", "is"],
     Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
     // Fold: ["=", "is"],
     Geolocation: ["=", "is"],
@@ -224,6 +213,7 @@ const onFieldChange = (value, index) => {
   const field = drop_down.value.find((f) => f.fieldname === value.fieldname);
   if (field) {
     Object.assign(filters.value[index], {
+      doctype:field.doctype,
       fieldtype: field.fieldtype,
       label: field.label,
       value: field.value,
@@ -263,7 +253,7 @@ const getApiFilters = () => {
       }
 
       return [
-        props.doctype,
+        field.doctype,
         field?.fieldname || filter.fieldname,
         filter.operator,
         queryValue,
