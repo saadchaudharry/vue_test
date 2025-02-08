@@ -26,7 +26,7 @@
   </template>
   
   <script setup>
-  import { ref, defineProps, defineEmits } from "vue";
+  import { ref, defineProps, defineEmits,onMounted } from "vue";
   import { Button, Autocomplete } from "frappe-ui";
   
   // Props
@@ -38,26 +38,34 @@
   });
   
   // Emits
-  const emit = defineEmits(["change"]);
+  const emit = defineEmits(["change_sort_by"]);
   
   const iconState = ref("arrow_upward");
   const fields = ref(props.fields.filter(field => field.fieldtype === 'Date' || field.fieldtype === 'Datetime'));
   const SortByField = ref({ label: "Last Modified", value: "modified" });
   const SortByState = ref("desc");
   
+
+
+
+
+
+// onMounted(()=>{
+//   emitChange()
+// })
+
+
+
+
   function toggleIcon() {
     SortByState.value = SortByState.value === "desc" ? "asc" : "desc";
     iconState.value = iconState.value === "arrow_upward" ? "arrow_downward" : "arrow_upward";
-  
     emitChange();
   }
   
   function emitChange() {
-
-    console.log( `${SortByState.value} ${SortByField.value.value} `)
-
-
-    emit("change", { SortByField: SortByField.value.value, SortByState: SortByState.value });
+    console.log(`${SortByField.value.value} ${SortByState.value}`)
+    emit("change_sort_by", `${SortByField.value.value} ${SortByState.value}`);
   }
 
 

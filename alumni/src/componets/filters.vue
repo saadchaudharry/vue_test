@@ -87,6 +87,7 @@
             :loadingText="null"
             :disabled="false"
             :link="null"
+            @click="applyFilters()"
           >
           Apply filters
           </Button>
@@ -133,6 +134,15 @@ const initiateFilter = () => {
         addFilter();
       }
   };
+
+
+
+// onMounted(()=>{
+//   emit("filters_update", getApiFilters());
+// })
+
+
+
 
 // Add a new blank filter
 const addFilter = () => {
@@ -262,16 +272,23 @@ const getApiFilters = () => {
 };
 
 
+const applyFilters = () => {
+  console.log('qwdqw')
+  emit("filters_update", getApiFilters());
+};
+
+
+
 
 
 // Watch for filter changes and emit to parent
-watch(filters,() => {
+// watch(filters,() => {
   
-    emit("filters_update", getApiFilters());
-
-  },
-  { deep: true, immediate: true }
-);
+//     emit("filters_update", getApiFilters());
+//     console.log(filters)
+//   },
+//   { deep: true, immediate: true }
+// );
 
 
 </script>
