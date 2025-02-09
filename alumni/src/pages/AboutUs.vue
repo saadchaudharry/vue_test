@@ -25,13 +25,13 @@
       </div>
 
       <!-- List view -->
-      <ListView
-        class="h-[350px] mb-8"
-        :columns="columns_label"
-        :rows="data_list?.data || []"
-        row-key="title"
-        :options="listViewOptions"
-      />
+        <ListView
+          class="h-[350px] mb-8"
+          :columns="columns_label"
+          :rows="data_list?.data || []"
+          row-key="name"
+          :options="listViewOptions"
+        />
 
       <!-- Pagination -->
       <Pagination 
@@ -53,7 +53,7 @@ import orderBy from '../componets/orderby.vue'
 import Pagination from '../componets/Pagination.vue'
 
 // Constants
-const DOCTYPE = 'Alumni Event'
+const DOCTYPE = 'ToDo'
 const listViewOptions = {
   selectable: true,
   showTooltip: true,
@@ -75,24 +75,29 @@ const fields_loaded = ref(false)
 const filters_list = ref([])
 const sort_by = ref('modified desc')
 const page_length = ref(20)
+
+// shallowRef
 const data_list = shallowRef(null)
 
 // Computed properties
-const columns = computed(() => 
-  fields_list.value
+const columns = computed(() => [
+  'name',
+  ...fields_list.value
     .filter(field => field.in_list_view)
     .map(field => field.fieldname)
-)
+]);
 
-const columns_label = computed(() =>
-  fields_list.value
+const columns_label = computed(() => [
+  { label: 'name', fieldname: 'name', key: 'name' },
+  ...fields_list.value
     .filter(field => field.in_list_view)
     .map(field => ({
       label: field.label,
       fieldname: field.fieldname,
       key: field.fieldname
     }))
-)
+]);
+
 
 // Data fetching for fields
 const fieldsResource = createResource({
@@ -117,6 +122,17 @@ const fieldsResource = createResource({
     fields_loaded.value = true
   }
 })
+
+
+
+
+
+
+
+
+
+
+
 
 // Combined watcher for filters, sorting and pagination
 watch(

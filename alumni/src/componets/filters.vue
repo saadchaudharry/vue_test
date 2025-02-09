@@ -160,11 +160,15 @@ const addFilter = () => {
 // Remove a filter by index
 const removeFilter = (index) => {
   filters.value.splice(index, 1);
+  emit("filters_update", getApiFilters());
+
 };
 
 // Clear all filters
 const clearFilters = () => {
   filters.value = [];
+  emit("filters_update", getApiFilters());
+
 };
 
 
@@ -181,7 +185,7 @@ const getOperators = (fieldtype) => {
     Currency: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
     Data: ["=", "like", "not like", "in", "not in", "is"],
     Date: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
-    Datetime: ["=", "!=", ">", "<", ">=", "<=", "between", "is"],
+    Datetime: [">", "<", ">=", "<=", "between", "is"],
     Duration: ["=", "!=", ">", "<", ">=", "<=", "is"],
     DynamicLink:["=", "like", "not like", "in", "not in", "is"],
     Float: ["=", "!=", ">", "<", ">=", "<=", "in", "not in", "is"],
