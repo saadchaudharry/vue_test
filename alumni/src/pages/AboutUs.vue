@@ -21,7 +21,7 @@
           @change_sort_by="applySortBy" 
         />
 
-        <Button variant="solid">+ Add</Button>
+        <Button variant="solid" @click="addRecord()">+ Add</Button>
       </div>
 
       <!-- List view -->
@@ -127,7 +127,15 @@ const fieldsResource = createResource({
 
 
 
+// add record
+const addRecord = ()=>{
+  console.log(data_list.value.insert.submit(
+    {
+          description: `New todo${Math.random()}`
 
+    }
+  ))
+}
 
 
 
