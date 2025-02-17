@@ -1,6 +1,8 @@
 <template>
-  <div class="max-w-3xl mx-auto">
+  <!-- <div class="max-w-3xl mx-auto"> -->
+  <div>
     <!-- Loading state -->
+
     <div v-if="!fields_loaded" class="p-4 text-gray-500">
       <Spinner class="w-8" />
     </div>
@@ -22,12 +24,20 @@
         />
 
         <Button variant="solid" @click="addRecord()">+ Add</Button>
+
+
+        <Columneset  
+            :fields="fields_list"
+            @fieldsChanged="applyColumns" 
+
+          />
+
       </div>
 
       <!-- List view -->
         <ListView
-          class="h-[350px] mb-8"
-          :columns="columns_label"
+          class="h-[350px]"
+          :columns="columns"
           :rows="data_list?.data || []"
           row-key="name"
           :options="listViewOptions"
@@ -35,9 +45,12 @@
 
       <!-- Pagination -->
       <Pagination 
+        class="mt-1"
         :modelValue="page_length"  
         @change_pagination="applyPagination"
       />
+
+
     </div>
   </div>
 </template>
@@ -48,9 +61,10 @@ import { createResource, createListResource, Spinner } from 'frappe-ui'
 import { ListView } from 'frappe-ui'
 
 // Components
-import filters from '../componets/filters.vue'
-import orderBy from '../componets/orderby.vue'
+import filters    from '../componets/filters.vue'
+import orderBy    from '../componets/orderby.vue'
 import Pagination from '../componets/Pagination.vue'
+import Columneset from '../componets/Columneset.vue'
 
 // Constants
 const DOCTYPE = 'ToDo'
@@ -72,31 +86,21 @@ const listViewOptions = {
 // Reactive state
 const fields_list = ref([])
 const fields_loaded = ref(false)
+
+// list view essentials
 const filters_list = ref([])
 const sort_by = ref('modified desc')
 const page_length = ref(20)
 
+const columns = ref([])          
+const columns_label = ref([])     
+
 // shallowRef
 const data_list = shallowRef(null)
 
-// Computed properties
-const columns = computed(() => [
-  'name',
-  ...fields_list.value
-    .filter(field => field.in_list_view)
-    .map(field => field.fieldname)
-]);
 
-const columns_label = computed(() => [
-  { label: 'name', fieldname: 'name', key: 'name' },
-  ...fields_list.value
-    .filter(field => field.in_list_view)
-    .map(field => ({
-      label: field.label,
-      fieldname: field.fieldname,
-      key: field.fieldname
-    }))
-]);
+
+
 
 
 // Data fetching for fields
@@ -107,16 +111,37 @@ const fieldsResource = createResource({
     fields_list.value = data
     fields_loaded.value = true
     
+    // Set default columns based on the fields from the server
+    columns.value = [
+      { label: 'name', fieldname: 'name', key: 'name','width':"11rem", },
+      ...data
+        .filter(field => field.in_list_view)
+        .map(field => ({
+          label: field.label,
+          fieldname: field.fieldname,
+          key: field.fieldname,
+          width:field.width
+        }))
+    ]
+    // Extract the field names for the list resource.
+    columns_label.value = columns.value.map(col => col.fieldname)
+
+
+
     // Initialize data list after fields are loaded
     data_list.value = createListResource({
       doctype: DOCTYPE,
-      fields: columns.value,
+      fields: columns_label.value,
       orderBy: sort_by.value,
       pageLength: page_length.value,
       filters: filters_list.value,
       auto: false
     })
     data_list.value.fetch()
+
+
+
+
   },
   onError() {
     fields_loaded.value = true
@@ -129,12 +154,10 @@ const fieldsResource = createResource({
 
 // add record
 const addRecord = ()=>{
-  console.log(data_list.value.insert.submit(
-    {
-          description: `New todo${Math.random()}`
-
+  data_list.value.insert.submit({
+      description: `New todo${Math.random()}`
     }
-  ))
+  )
 }
 
 
@@ -144,13 +167,14 @@ const addRecord = ()=>{
 
 // Combined watcher for filters, sorting and pagination
 watch(
-  [filters_list, sort_by, page_length], 
+  [filters_list, sort_by, page_length,columns_label], 
   () => {
     if (!data_list.value) return
     data_list.value.update({
       filters: filters_list.value,
       orderBy: sort_by.value,
-      pageLength: page_length.value
+      pageLength: page_length.value,
+      fields: columns_label.value,
     })
     data_list.value.reload()
   }
@@ -167,6 +191,14 @@ const applySortBy = (newSortBy) => {
 
 const applyPagination = (newPageLength) => {
   page_length.value = newPageLength
+}
+
+
+const applyColumns = (newColumns_label) => {
+
+  columns.value = newColumns_label
+  columns_label.value = newColumns_label.map(col => col.fieldname)
+
 }
 
 const refreshData = () => data_list.value?.reload()
